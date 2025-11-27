@@ -16,70 +16,52 @@ import {
   DialogContent,
   DialogActions,
   TextField,
-  MenuItem,
   Alert,
 } from '@mui/material'
 import { Add, Edit, Delete } from '@mui/icons-material'
-import { usersAPI, rolesAPI } from '../services/api'
+import { rolesAPI } from '../services/api'
 import { useAuth } from '../contexts/AuthContext'
 import { canCreate, canUpdate, canDelete } from '../utils/permissions'
 
-export default function Users() {
-  const { user: currentUser } = useAuth()
-  const [users, setUsers] = useState([])
+export default function Roles() {
+  const { user } = useAuth()
   const [roles, setRoles] = useState([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
-  const [editingUser, setEditingUser] = useState(null)
+  const [editingRole, setEditingRole] = useState(null)
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
-    password: '',
-    role_id: '',
+    description: '',
   })
   const [error, setError] = useState('')
 
   useEffect(() => {
-    fetchUsers()
     fetchRoles()
   }, [])
-  
+
   const fetchRoles = async () => {
     try {
       const response = await rolesAPI.getAll()
       setRoles(response.data)
     } catch (error) {
       console.error('Error fetching roles:', error)
-    }
-  }
-
-  const fetchUsers = async () => {
-    try {
-      const response = await usersAPI.getAll()
-      setUsers(response.data)
-    } catch (error) {
-      console.error('Error fetching users:', error)
     } finally {
       setLoading(false)
     }
   }
 
-  const handleOpen = (user = null) => {
-    if (user) {
-      setEditingUser(user)
+  const handleOpen = (role = null) => {
+    if (role) {
+      setEditingRole(role)
       setFormData({
-        name: user.name,
-        email: user.email,
-        password: '',
-        role_id: user.role_id || '',
+        name: role.name,
+        description: role.description || '',
       })
     } else {
-      setEditingUser(null)
+      setEditingRole(null)
       setFormData({
         name: '',
-        email: '',
-        password: '',
-        role_id: '',
+        description: '',
       })
     }
     setOpen(true)
@@ -88,54 +70,33 @@ export default function Users() {
 
   const handleClose = () => {
     setOpen(false)
-    setEditingUser(null)
+    setEditingRole(null)
     setError('')
   }
 
   const handleSubmit = async () => {
     try {
-      // Validar que role_id esté presente
-      if (!formData.role_id) {
-        setError('Debes seleccionar un rol')
-        return
-      }
-      
-      // Preparar datos para enviar
-      const userData = {
-        name: formData.name,
-        email: formData.email,
-        role_id: formData.role_id,
-      }
-      
-      // Solo incluir password si se está creando o si se proporcionó uno nuevo
-      if (!editingUser || formData.password) {
-        if (!formData.password) {
-          setError('La contraseña es requerida')
-          return
-        }
-        userData.password = formData.password
-      }
-      
-      if (editingUser) {
-        await usersAPI.update(editingUser.id, userData)
+      if (editingRole) {
+        await rolesAPI.update(editingRole.id, formData)
       } else {
-        await usersAPI.create(userData)
+        await rolesAPI.create(formData)
       }
 
       handleClose()
-      fetchUsers()
+      fetchRoles()
     } catch (error) {
-      setError(error.response?.data?.detail || 'Error al guardar el usuario')
+      setError(error.response?.data?.detail || 'Error al guardar el rol')
     }
   }
 
   const handleDelete = async (id) => {
-    if (window.confirm('¿Estás seguro de eliminar este usuario?')) {
+    if (window.confirm('¿Estás seguro de eliminar este rol?')) {
       try {
-        await usersAPI.delete(id)
-        fetchUsers()
+        await rolesAPI.delete(id)
+        fetchRoles()
       } catch (error) {
-        console.error('Error deleting user:', error)
+        console.error('Error deleting role:', error)
+        alert(error.response?.data?.detail || 'Error al eliminar el rol')
       }
     }
   }
@@ -143,8 +104,8 @@ export default function Users() {
   return (
     <Box sx={{ backgroundColor: 'rgba(255, 255, 255, 0.7)', p: 3, borderRadius: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-        <Typography variant="h4">Usuarios</Typography>
-        {canCreate(currentUser, 'users') && (
+        <Typography variant="h4">Roles</Typography>
+        {canCreate(user, 'roles') && (
           <Button 
             variant="contained" 
             startIcon={<Add />} 
@@ -156,7 +117,7 @@ export default function Users() {
               fontWeight: 600,
             }}
           >
-            Nuevo Usuario
+            Nuevo Rol
           </Button>
         )}
       </Box>
@@ -172,24 +133,20 @@ export default function Users() {
           <TableHead>
             <TableRow>
               <TableCell>Nombre</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>Rol</TableCell>
+              <TableCell>Descripción</TableCell>
               <TableCell>Acciones</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell>{user.name}</TableCell>
-                <TableCell>{user.email}</TableCell>
+            {roles.map((role) => (
+              <TableRow key={role.id}>
+                <TableCell>{role.name}</TableCell>
+                <TableCell>{role.description || '-'}</TableCell>
                 <TableCell>
-                  {user.role || (roles.find(r => r.id === user.role_id)?.name || 'Sin rol')}
-                </TableCell>
-                <TableCell>
-                  {canUpdate(currentUser, 'users') && (
+                  {canUpdate(user, 'roles') && (
                     <IconButton 
                       size="small" 
-                      onClick={() => handleOpen(user)}
+                      onClick={() => handleOpen(role)}
                       sx={{
                         color: 'primary.main',
                         '&:hover': {
@@ -201,10 +158,10 @@ export default function Users() {
                       <Edit />
                     </IconButton>
                   )}
-                  {canDelete(currentUser, 'users') && (
+                  {canDelete(user, 'roles') && (
                     <IconButton 
                       size="small" 
-                      onClick={() => handleDelete(user.id)}
+                      onClick={() => handleDelete(role.id)}
                       sx={{
                         color: 'error.main',
                         '&:hover': {
@@ -225,7 +182,7 @@ export default function Users() {
 
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogTitle>
-          {editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}
+          {editingRole ? 'Editar Rol' : 'Nuevo Rol'}
         </DialogTitle>
         <DialogContent>
           {error && (
@@ -240,41 +197,17 @@ export default function Users() {
             required
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            disabled={editingRole !== null} // No permitir editar nombre si ya existe
           />
           <TextField
             margin="dense"
-            label="Email"
-            type="email"
+            label="Descripción"
             fullWidth
-            required
-            value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            multiline
+            rows={3}
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           />
-          <TextField
-            margin="dense"
-            label="Contraseña"
-            type="password"
-            fullWidth
-            required={!editingUser}
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            helperText={editingUser ? 'Dejar vacío para mantener la contraseña actual' : ''}
-          />
-          <TextField
-            margin="dense"
-            label="Rol"
-            select
-            fullWidth
-            required
-            value={formData.role_id}
-            onChange={(e) => setFormData({ ...formData, role_id: e.target.value })}
-          >
-            {roles.map((role) => (
-              <MenuItem key={role.id} value={role.id}>
-                {role.name} - {role.description || 'Sin descripción'}
-              </MenuItem>
-            ))}
-          </TextField>
         </DialogContent>
         <DialogActions>
           <Button 

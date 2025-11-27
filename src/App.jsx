@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
@@ -8,7 +8,9 @@ import Reports from './pages/Reports'
 import Users from './pages/Users'
 import Categories from './pages/Categories'
 import Brands from './pages/Brands'
+import Roles from './pages/Roles'
 import Layout from './components/Layout'
+import { canViewPage } from './utils/permissions'
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth()
@@ -18,6 +20,25 @@ function PrivateRoute({ children }) {
   }
   
   return user ? children : <Navigate to="/login" />
+}
+
+function ProtectedRoute({ children, path }) {
+  const { user, loading } = useAuth()
+  const location = useLocation()
+  
+  if (loading) {
+    return <div>Cargando...</div>
+  }
+  
+  if (!user) {
+    return <Navigate to="/login" />
+  }
+  
+  if (!canViewPage(user, path || location.pathname)) {
+    return <Navigate to="/" />
+  }
+  
+  return children
 }
 
 function App() {
@@ -33,13 +54,14 @@ function App() {
             </PrivateRoute>
           }
         >
-          <Route index element={<Dashboard />} />
-          <Route path="inventory" element={<Inventory />} />
-          <Route path="sales" element={<Sales />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="users" element={<Users />} />
-          <Route path="categories" element={<Categories />} />
-          <Route path="brands" element={<Brands />} />
+          <Route index element={<ProtectedRoute path="/"><Dashboard /></ProtectedRoute>} />
+          <Route path="inventory" element={<ProtectedRoute path="/inventory"><Inventory /></ProtectedRoute>} />
+          <Route path="sales" element={<ProtectedRoute path="/sales"><Sales /></ProtectedRoute>} />
+          <Route path="reports" element={<ProtectedRoute path="/reports"><Reports /></ProtectedRoute>} />
+          <Route path="users" element={<ProtectedRoute path="/users"><Users /></ProtectedRoute>} />
+          <Route path="categories" element={<ProtectedRoute path="/categories"><Categories /></ProtectedRoute>} />
+          <Route path="brands" element={<ProtectedRoute path="/brands"><Brands /></ProtectedRoute>} />
+          <Route path="roles" element={<ProtectedRoute path="/roles"><Roles /></ProtectedRoute>} />
         </Route>
       </Routes>
     </AuthProvider>

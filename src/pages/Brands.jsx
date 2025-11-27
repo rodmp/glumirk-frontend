@@ -20,8 +20,11 @@ import {
 } from '@mui/material'
 import { Add, Edit, Delete } from '@mui/icons-material'
 import { brandsAPI } from '../services/api'
+import { useAuth } from '../contexts/AuthContext'
+import { canCreate, canUpdate, canDelete } from '../utils/permissions'
 
 export default function Brands() {
+  const { user } = useAuth()
   const [brands, setBrands] = useState([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
@@ -102,19 +105,21 @@ export default function Brands() {
     <Box sx={{ backgroundColor: 'rgba(255, 255, 255, 0.7)', p: 3, borderRadius: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
         <Typography variant="h4">Marcas</Typography>
-        <Button 
-          variant="contained" 
-          startIcon={<Add />} 
-          onClick={() => handleOpen()}
-          sx={{
-            py: 1.2,
-            px: 3,
-            fontSize: '0.95rem',
-            fontWeight: 600,
-          }}
-        >
-          Nueva Marca
-        </Button>
+        {canCreate(user, 'brands') && (
+          <Button 
+            variant="contained" 
+            startIcon={<Add />} 
+            onClick={() => handleOpen()}
+            sx={{
+              py: 1.2,
+              px: 3,
+              fontSize: '0.95rem',
+              fontWeight: 600,
+            }}
+          >
+            Nueva Marca
+          </Button>
+        )}
       </Box>
 
       <TableContainer 
@@ -138,32 +143,36 @@ export default function Brands() {
                 <TableCell>{brand.name}</TableCell>
                 <TableCell>{brand.description || '-'}</TableCell>
                 <TableCell>
-                  <IconButton 
-                    size="small" 
-                    onClick={() => handleOpen(brand)}
-                    sx={{
-                      color: 'primary.main',
-                      '&:hover': {
-                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                        transform: 'scale(1.1)',
-                      },
-                    }}
-                  >
-                    <Edit />
-                  </IconButton>
-                  <IconButton 
-                    size="small" 
-                    onClick={() => handleDelete(brand.id)}
-                    sx={{
-                      color: 'error.main',
-                      '&:hover': {
-                        backgroundColor: 'rgba(211, 47, 47, 0.1)',
-                        transform: 'scale(1.1)',
-                      },
-                    }}
-                  >
-                    <Delete />
-                  </IconButton>
+                  {canUpdate(user, 'brands') && (
+                    <IconButton 
+                      size="small" 
+                      onClick={() => handleOpen(brand)}
+                      sx={{
+                        color: 'primary.main',
+                        '&:hover': {
+                          backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                          transform: 'scale(1.1)',
+                        },
+                      }}
+                    >
+                      <Edit />
+                    </IconButton>
+                  )}
+                  {canDelete(user, 'brands') && (
+                    <IconButton 
+                      size="small" 
+                      onClick={() => handleDelete(brand.id)}
+                      sx={{
+                        color: 'error.main',
+                        '&:hover': {
+                          backgroundColor: 'rgba(211, 47, 47, 0.1)',
+                          transform: 'scale(1.1)',
+                        },
+                      }}
+                    >
+                      <Delete />
+                    </IconButton>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

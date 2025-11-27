@@ -17,13 +17,18 @@ import {
   DialogActions,
   Alert,
   CircularProgress,
+  MenuItem,
 } from '@mui/material'
 import { Add } from '@mui/icons-material'
-import { salesAPI, itemsAPI } from '../services/api'
+import { salesAPI, itemsAPI, usersAPI } from '../services/api'
 import { format } from 'date-fns'
+import { useAuth } from '../contexts/AuthContext'
+import { canCreate } from '../utils/permissions'
 
 export default function Sales() {
+  const { user } = useAuth()
   const [sales, setSales] = useState([])
+  const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('')
   const [open, setOpen] = useState(false)
@@ -31,6 +36,7 @@ export default function Sales() {
     barcode: '',
     quantity: '1',
     device_id: '',
+    user_id: '',
   })
   const [selectedItem, setSelectedItem] = useState(null)
   const [loadingItem, setLoadingItem] = useState(false)
@@ -39,7 +45,17 @@ export default function Sales() {
 
   useEffect(() => {
     fetchSales()
+    fetchUsers()
   }, [])
+  
+  const fetchUsers = async () => {
+    try {
+      const response = await usersAPI.getAll({ limit: 100 })
+      setUsers(response.data)
+    } catch (error) {
+      console.error('Error fetching users:', error)
+    }
+  }
 
   const fetchSales = async () => {
     try {
@@ -58,6 +74,7 @@ export default function Sales() {
       barcode: '',
       quantity: '1',
       device_id: '',
+      user_id: '',
     })
     setSelectedItem(null)
     setError('')
@@ -124,6 +141,7 @@ export default function Sales() {
         barcode: formData.barcode,
         quantity: quantity,
         device_id: formData.device_id || null,
+        user_id: formData.user_id || null,
       }
 
       await salesAPI.create(saleData)
@@ -145,6 +163,8 @@ export default function Sales() {
     return (
       sale.item?.name?.toLowerCase().includes(searchTerm) ||
       sale.item?.barcode?.toLowerCase().includes(searchTerm) ||
+      sale.user?.name?.toLowerCase().includes(searchTerm) ||
+      sale.user?.email?.toLowerCase().includes(searchTerm) ||
       sale.device_id?.toLowerCase().includes(searchTerm)
     )
   })
@@ -153,19 +173,21 @@ export default function Sales() {
     <Box sx={{ backgroundColor: 'rgba(255, 255, 255, 0.7)', p: 3, borderRadius: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
         <Typography variant="h4">Ventas</Typography>
-        <Button 
-          variant="contained" 
-          startIcon={<Add />} 
-          onClick={handleOpen}
-          sx={{
-            py: 1.2,
-            px: 3,
-            fontSize: '0.95rem',
-            fontWeight: 600,
-          }}
-        >
-          Nueva Venta
-        </Button>
+        {canCreate(user, 'sales') && (
+          <Button 
+            variant="contained" 
+            startIcon={<Add />} 
+            onClick={handleOpen}
+            sx={{
+              py: 1.2,
+              px: 3,
+              fontSize: '0.95rem',
+              fontWeight: 600,
+            }}
+          >
+            Nueva Venta
+          </Button>
+        )}
       </Box>
 
       <TextField
@@ -193,6 +215,7 @@ export default function Sales() {
               <TableCell>Cantidad</TableCell>
               <TableCell>Precio Unit.</TableCell>
               <TableCell>Total</TableCell>
+              <TableCell>Usuario</TableCell>
               <TableCell>Dispositivo</TableCell>
             </TableRow>
           </TableHead>
@@ -207,6 +230,7 @@ export default function Sales() {
                 <TableCell>{sale.quantity}</TableCell>
                 <TableCell>${sale.price.toFixed(2)}</TableCell>
                 <TableCell>${sale.total.toFixed(2)}</TableCell>
+                <TableCell>{sale.user?.name || sale.user?.email || '-'}</TableCell>
                 <TableCell>{sale.device_id || '-'}</TableCell>
               </TableRow>
             ))}
@@ -284,6 +308,26 @@ export default function Sales() {
                 : ''
             }
           />
+
+          <TextField
+            margin="dense"
+            label="Usuario (Opcional)"
+            select
+            fullWidth
+            value={formData.user_id}
+            onChange={(e) => setFormData({ ...formData, user_id: e.target.value })}
+            sx={{ mt: 2 }}
+            helperText="Dejar vacío para usar el usuario actual. Solo administradores pueden asignar a otros usuarios."
+          >
+            <MenuItem value="">
+              <em>Usuario actual</em>
+            </MenuItem>
+            {users.map((user) => (
+              <MenuItem key={user.id} value={user.id}>
+                {user.name} ({user.email})
+              </MenuItem>
+            ))}
+          </TextField>
 
           <TextField
             margin="dense"

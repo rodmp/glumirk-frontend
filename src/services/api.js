@@ -40,6 +40,7 @@ api.interceptors.response.use(
 export const authAPI = {
   login: (email, password) => api.post('/auth/login', { email, password }),
   register: (userData) => api.post('/auth/register', userData),
+  getMe: () => api.get('/auth/me'),
 }
 
 // Items
@@ -90,6 +91,15 @@ export const brandsAPI = {
   create: (data) => api.post('/brands', data),
   update: (id, data) => api.put(`/brands/${id}`, data),
   delete: (id) => api.delete(`/brands/${id}`),
+}
+
+// Roles
+export const rolesAPI = {
+  getAll: (params) => api.get('/roles', { params }),
+  getById: (id) => api.get(`/roles/${id}`),
+  create: (data) => api.post('/roles', data),
+  update: (id, data) => api.put(`/roles/${id}`, data),
+  delete: (id) => api.delete(`/roles/${id}`),
 }
 
 export default api

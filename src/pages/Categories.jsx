@@ -20,8 +20,11 @@ import {
 } from '@mui/material'
 import { Add, Edit, Delete } from '@mui/icons-material'
 import { categoriesAPI } from '../services/api'
+import { useAuth } from '../contexts/AuthContext'
+import { canCreate, canUpdate, canDelete } from '../utils/permissions'
 
 export default function Categories() {
+  const { user } = useAuth()
   const [categories, setCategories] = useState([])
   const [loading, setLoading] = useState(true)
   const [open, setOpen] = useState(false)
@@ -102,19 +105,21 @@ export default function Categories() {
     <Box sx={{ backgroundColor: 'rgba(255, 255, 255, 0.7)', p: 3, borderRadius: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
         <Typography variant="h4">Categorías</Typography>
-        <Button 
-          variant="contained" 
-          startIcon={<Add />} 
-          onClick={() => handleOpen()}
-          sx={{
-            py: 1.2,
-            px: 3,
-            fontSize: '0.95rem',
-            fontWeight: 600,
-          }}
-        >
-          Nueva Categoría
-        </Button>
+        {canCreate(user, 'categories') && (
+          <Button 
+            variant="contained" 
+            startIcon={<Add />} 
+            onClick={() => handleOpen()}
+            sx={{
+              py: 1.2,
+              px: 3,
+              fontSize: '0.95rem',
+              fontWeight: 600,
+            }}
+          >
+            Nueva Categoría
+          </Button>
+        )}
       </Box>
 
       <TableContainer 
@@ -138,22 +143,25 @@ export default function Categories() {
                 <TableCell>{category.name}</TableCell>
                 <TableCell>{category.description || '-'}</TableCell>
                 <TableCell>
-                  <IconButton 
-                    size="small" 
-                    onClick={() => handleOpen(category)}
-                    sx={{
-                      color: 'primary.main',
-                      '&:hover': {
-                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                        transform: 'scale(1.1)',
-                      },
-                    }}
-                  >
-                    <Edit />
-                  </IconButton>
-                  <IconButton 
-                    size="small" 
-                    onClick={() => handleDelete(category.id)}
+                  {canUpdate(user, 'categories') && (
+                    <IconButton 
+                      size="small" 
+                      onClick={() => handleOpen(category)}
+                      sx={{
+                        color: 'primary.main',
+                        '&:hover': {
+                          backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                          transform: 'scale(1.1)',
+                        },
+                      }}
+                    >
+                      <Edit />
+                    </IconButton>
+                  )}
+                  {canDelete(user, 'categories') && (
+                    <IconButton 
+                      size="small" 
+                      onClick={() => handleDelete(category.id)}
                     sx={{
                       color: 'error.main',
                       '&:hover': {
@@ -161,9 +169,10 @@ export default function Categories() {
                         transform: 'scale(1.1)',
                       },
                     }}
-                  >
-                    <Delete />
-                  </IconButton>
+                    >
+                      <Delete />
+                    </IconButton>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

@@ -21,14 +21,16 @@ import {
   People as UsersIcon,
   Category as CategoryIcon,
   BrandingWatermark as BrandIcon,
+  AdminPanelSettings as RolesIcon,
   Logout as LogoutIcon,
 } from '@mui/icons-material'
 import { useAuth } from '../contexts/AuthContext'
+import { canViewPage } from '../utils/permissions'
 import '../styles/paperBackground.css'
 
 const drawerWidth = 240
 
-const menuItems = [
+const allMenuItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
   { text: 'Inventario', icon: <InventoryIcon />, path: '/inventory' },
   { text: 'Ventas', icon: <SalesIcon />, path: '/sales' },
@@ -36,12 +38,16 @@ const menuItems = [
   { text: 'Categorías', icon: <CategoryIcon />, path: '/categories' },
   { text: 'Marcas', icon: <BrandIcon />, path: '/brands' },
   { text: 'Usuarios', icon: <UsersIcon />, path: '/users' },
+  { text: 'Roles', icon: <RolesIcon />, path: '/roles' },
 ]
 
 export default function Layout() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { logout } = useAuth()
+  const { logout, user } = useAuth()
+  
+  // Filtrar menú según permisos del usuario
+  const menuItems = allMenuItems.filter(item => canViewPage(user, item.path))
 
   const handleLogout = () => {
     logout()

@@ -15,12 +15,41 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  const fetchUser = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        setLoading(false)
+        return
+      }
+
+      const response = await authAPI.getMe()
+      const userData = response.data
+      localStorage.setItem('user', JSON.stringify(userData))
+      setUser(userData)
+    } catch (error) {
+      console.error('Error fetching user:', error)
+      // Si hay error, limpiar datos
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      setUser(null)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
     const storedUser = localStorage.getItem('user')
-    if (storedUser) {
+    const token = localStorage.getItem('token')
+    
+    if (storedUser && token) {
+      // Cargar usuario del storage mientras se obtiene del servidor
       setUser(JSON.parse(storedUser))
+      // Actualizar desde el servidor
+      fetchUser()
+    } else {
+      setLoading(false)
     }
-    setLoading(false)
   }, [])
 
   const login = async (email, password) => {
@@ -29,8 +58,9 @@ export const AuthProvider = ({ children }) => {
       const { access_token } = response.data
       localStorage.setItem('token', access_token)
       
-      // Get user info (you might want to add a /me endpoint)
-      const userData = { email, role: 'admin' } // Placeholder
+      // Get user info from /me endpoint
+      const userResponse = await authAPI.getMe()
+      const userData = userResponse.data
       localStorage.setItem('user', JSON.stringify(userData))
       setUser(userData)
       
@@ -47,7 +77,7 @@ export const AuthProvider = ({ children }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, refreshUser: fetchUser }}>
       {children}
     </AuthContext.Provider>
   )
