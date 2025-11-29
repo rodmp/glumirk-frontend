@@ -137,15 +137,28 @@ export default function Sales() {
         return
       }
 
-      const saleData = {
-        barcode: formData.barcode,
-        quantity: quantity,
+      // Crear request con arreglo de items (aunque sea solo uno)
+      const salesData = {
+        items: [
+          {
+            barcode: formData.barcode,
+            quantity: quantity,
+          }
+        ],
         device_id: formData.device_id || null,
         user_id: formData.user_id || null,
       }
 
-      await salesAPI.create(saleData)
-      setSuccess('Venta registrada exitosamente')
+      const response = await salesAPI.create(salesData)
+      
+      // El endpoint ahora retorna un arreglo de ventas
+      const createdSales = response.data
+      if (createdSales && createdSales.length > 0) {
+        const totalAmount = createdSales.reduce((sum, sale) => sum + sale.total, 0)
+        setSuccess(`Venta registrada exitosamente. Total: $${totalAmount.toFixed(2)}`)
+      } else {
+        setSuccess('Venta registrada exitosamente')
+      }
       
       // Refresh sales list
       setTimeout(() => {

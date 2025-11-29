@@ -55,7 +55,8 @@ export const itemsAPI = {
 // Sales
 export const salesAPI = {
   getAll: (params) => api.get('/sales', { params }),
-  create: (saleData) => api.post('/sales', saleData),
+  create: (salesData) => api.post('/sales', salesData), // Ahora recibe { items: [...], device_id?, user_id? }
+  createSingle: (saleData) => api.post('/sales/single', saleData), // Endpoint individual para compatibilidad
   getReport: (params) => api.get('/sales/report', { params }),
   getDaily: () => api.get('/sales/daily'),
 }
