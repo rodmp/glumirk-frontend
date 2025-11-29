@@ -66,7 +66,26 @@ export const AuthProvider = ({ children }) => {
       
       return { success: true }
     } catch (error) {
-      return { success: false, error: error.response?.data?.detail || 'Error al iniciar sesión' }
+      // Manejo específico de errores de seguridad
+      let errorMessage = 'Error al iniciar sesión'
+      
+      if (error.status === 429) {
+        // Rate limiting - demasiados intentos
+        errorMessage = error.message || 'Demasiados intentos de login. Por favor espera unos minutos antes de intentar nuevamente.'
+      } else if (error.response?.status === 401) {
+        // Credenciales incorrectas
+        errorMessage = 'Correo electrónico o contraseña incorrectos'
+      } else if (error.response?.status === 403) {
+        // Acceso prohibido
+        errorMessage = 'Acceso denegado. Contacta al administrador.'
+      } else if (error.response?.data?.detail) {
+        // Mensaje del servidor
+        errorMessage = error.response.data.detail
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
+      return { success: false, error: errorMessage }
     }
   }
 

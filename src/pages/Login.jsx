@@ -74,7 +74,21 @@ export default function Login() {
             </Typography>
 
             {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
+              <Alert 
+                severity="error" 
+                sx={{ mb: 2 }}
+                action={
+                  error.includes('espera') && (
+                    <Button 
+                      color="inherit" 
+                      size="small" 
+                      onClick={() => setError('')}
+                    >
+                      Cerrar
+                    </Button>
+                  )
+                }
+              >
                 {error}
               </Alert>
             )}

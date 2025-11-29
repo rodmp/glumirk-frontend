@@ -258,7 +258,22 @@ export default function Sales() {
         handleClose()
       }, 2000)
     } catch (error) {
-      setError(error.response?.data?.detail || 'Error al registrar la venta')
+      // Manejo de errores de seguridad
+      let errorMessage = 'Error al registrar la venta'
+      
+      if (error.status === 429) {
+        errorMessage = error.message || 'Demasiadas ventas. Por favor espera un momento antes de intentar nuevamente.'
+      } else if (error.status === 413) {
+        errorMessage = 'La venta contiene demasiados productos. Intenta con menos items.'
+      } else if (error.status === 403) {
+        errorMessage = 'No tienes permisos para realizar ventas.'
+      } else if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail
+      } else if (error.message) {
+        errorMessage = error.message
+      }
+      
+      setError(errorMessage)
     } finally {
       setProcessingSale(false)
     }
